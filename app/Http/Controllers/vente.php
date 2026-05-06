@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Vente as VenteModel;
+use App\Models\Inventaire as InventaireModel;
 use App\Models\Produit;
 use Ramsey\Uuid\Type\Decimal;
 
@@ -33,6 +34,11 @@ class vente extends Controller
         if (!$produit) {
             return response()->json(['error' => 'Produit non trouvé'], 404);
         }
+        $inventaire = InventaireModel::where('produit_id', $produit->id)->first();
+        if (!$inventaire) {
+            return response()->json(['message' => 'Inventaire introuvable'], 404);
+        }
+
         if ($request->type_transaction === 'sortie' && $produit->quantite < $request->quantite) {
             return response()->json(['error' => 'Quantité insuffisante en stock'], 400);
         }
@@ -45,21 +51,24 @@ class vente extends Controller
         ]);
         if ($request->type_transaction === 'sortie') {
             $produit->quantite -= $request->quantite;
+
+            $inventaire->update([
+                'prix_total' => $produit->prix * $produit->quantite,
+                'produit_id' => $produit->id
+            ]);
         } else {
             $produit->quantite += $request->quantite;
+            $inventaire->update([
+                'prix_total' => $produit->prix * $produit->quantite,
+                'produit_id' => $produit->id
+            ]);
         }
         $produit->save();
 
         return response()->json($vente, 201);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+
 
     /**
      * Display the specified resource.
@@ -69,13 +78,6 @@ class vente extends Controller
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
 
     /**
      * Update the specified resource in storage.
@@ -88,8 +90,5 @@ class vente extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
-    {
-        //
-    }
+    public function destroy(string $id) {}
 }

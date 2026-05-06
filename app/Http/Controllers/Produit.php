@@ -44,7 +44,7 @@ class Produit extends Controller
             'prix_total' => $request->prix * $request->quantite,
             'produit_id' => $produit->id
         ]);
-        return response()->json([$produit, $inventaire], 201);
+        return response()->json($produit, 201);
     }
 
 
@@ -98,7 +98,7 @@ class Produit extends Controller
         ]);
 
         // $produit->save();
-        return response()->json([$inventaire, $produit]);
+        return response()->json($produit);
     }
 
     /**
