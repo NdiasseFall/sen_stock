@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Categorie as CategorieModel;
 
-class Categorie extends Controller
+class CategorieController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -18,7 +18,7 @@ class Categorie extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Request $request)
+    public function store(Request $request)
     {
         $request->validate([
             'nom' => 'required|string|max:255',
@@ -57,19 +57,16 @@ class Categorie extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(int $id)
     {
-        $categorie = CategorieModel::find($id);
-        if (!$categorie) {
-            return response()->json(['message' => 'Catégorie non trouvée'], 404);
-        }
-        return response()->json($categorie);
+        $categorie = CategorieModel::findOrFail($id);
+        return response()->json($categorie, 200);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(int $id)
     {
         $categorie = CategorieModel::find($id);
         if (!$categorie) {
@@ -106,6 +103,6 @@ class Categorie extends Controller
             return response()->json(['message' => 'Catégorie non trouvée'], 404);
         }
         $categorie->delete();
-        return response()->json(['message' => 'Catégorie supprimée']);
+        return response()->json(['message' => 'Catégorie supprimée'], 204);
     }
 }
