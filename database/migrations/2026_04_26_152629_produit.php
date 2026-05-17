@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nom');
             $table->decimal('prix', 8, 2);
-            $table->string('description');
+            $table->text('description')->nullable();
             $table->integer('quantite')->unsigned();
             // Création de la clé étrangère
             $table->unsignedBigInteger('categorie_id');

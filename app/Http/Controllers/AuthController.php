@@ -4,41 +4,85 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-
 
 class AuthController extends Controller
 {
-
-    public function register(Request $request)
+    /**
+     * Liste tous les utilisateurs
+     */
+    public function index()
     {
-        $request->validate([
-            'prenom' => 'required | string | max:255',
-            'nom' => 'required | string | max:255',
-            'email' => 'required | email | unique:users,email',
-            'password' => 'required | string ',
-            'role' => 'required | string'
-        ]);
-
-        // Vérification si l'email existe déjà
-        if (User::where('email', $request->email)->exists()) {
-            return response()->json([
-                'error' => 'Cet email est déjà utilisé'
-            ], 409); // 409 = Conflict
-        }
-
-        $user = User::create([
-            'prenom' => $request->prenom,
-            'nom' => $request->nom,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-        ]);
-        return response()->json(['success' => 'Inscription avec success'], 200);
+        return response()->json(User::all(), 200);
     }
 
+    /**
+     * Crée un nouvel utilisateur (inscription)
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'prenom' => 'required|string|max:255',
+            'nom' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'role' => 'required|string',
+        ]);
+
+        $validated['password'] = bcrypt($validated['password']);
+
+        $user = User::create($validated);
+
+        return response()->json($user, 201);
+    }
+
+    /**
+     * Affiche un utilisateur par ID
+     */
+    public function show(int $id)
+    {
+        $user = User::findOrFail($id);
+        return response()->json($user, 200);
+    }
+
+    /**
+     * Met à jour un utilisateur
+     */
+    public function update(Request $request, int $id)
+    {
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'prenom' => 'sometimes|string|max:255',
+            'nom' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'password' => 'sometimes|string|min:6',
+            'role' => 'sometimes|string',
+        ]);
+
+        if (isset($validated['password'])) {
+            $validated['password'] = bcrypt($validated['password']);
+        }
+
+        $user->update($validated);
+
+        return response()->json($user, 200);
+    }
+
+    /**
+     * Supprime un utilisateur
+     */
+    public function destroy(int $id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return response()->json(['message' => 'Utilisateur supprimé'], 204);
+    }
+
+    /**
+     * Connexion utilisateur
+     */
     public function login(Request $request)
     {
         $request->validate([
@@ -46,13 +90,11 @@ class AuthController extends Controller
             'password' => 'required|string'
         ]);
 
-
         if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['error' => 'Email or password is wrong'], 401);
+            return response()->json(['error' => 'Email ou mot de passe incorrect'], 401);
         }
 
-        /** @var User $user */
-        $user = Auth::user();
+        $user = User::findOrFail(Auth::id());
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -61,7 +103,9 @@ class AuthController extends Controller
         ], 200);
     }
 
-
+    /**
+     * Déconnexion utilisateur
+     */
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
